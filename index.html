@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>长方体展开图 - 交互动画</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f0f23;
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  color: #e0e0e0;
+  overflow: hidden;
+}
+#container { width: 100vw; height: 100vh; }
+
+.panel {
+  position: fixed;
+  z-index: 10;
+  background: rgba(15, 15, 35, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+#controls {
+  top: 20px;
+  left: 20px;
+  width: 300px;
+}
+
+#info {
+  top: 20px;
+  right: 20px;
+  width: 280px;
+}
+
+h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.slider-group { margin-bottom: 14px; }
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.slider-label .value {
+  color: #64B5F6;
+  font-weight: 600;
+  font-family: "SF Mono", "Fira Code", "Menlo", monospace;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.15);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #64B5F6;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(100,181,246,0.4);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+button {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+button:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.3);
+}
+button.active {
+  background: rgba(100,181,246,0.3);
+  border-color: #64B5F6;
+}
+
+#info .formula {
+  font-family: "SF Mono", "Fira Code", "Menlo", monospace;
+  font-size: 13px;
+  line-height: 2;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+#info .formula .highlight {
+  color: #FFD54F;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.face-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 12px;
+}
+.face-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+}
+.face-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.hint {
+  margin-top: 16px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.pair-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 8px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div id="controls" class="panel">
+  <h2>长方体展开图</h2>
+
+  <div class="slider-group">
+    <div class="slider-label">
+      <span>展开</span>
+      <span class="value" id="unfold-val">0%</span>
+    </div>
+    <input type="range" id="unfold-slider" min="0" max="100" value="0" step="0.5">
+  </div>
+
+  <div class="slider-group">
+    <div class="slider-label">
+      <span>长 <b>a</b></span>
+      <span class="value" id="a-val">3.0</span>
+    </div>
+    <input type="range" id="a-slider" min="0.5" max="5" value="3" step="0.1">
+  </div>
+
+  <div class="slider-group">
+    <div class="slider-label">
+      <span>宽 <b>b</b></span>
+      <span class="value" id="b-val">2.0</span>
+    </div>
+    <input type="range" id="b-slider" min="0.5" max="5" value="2" step="0.1">
+  </div>
+
+  <div class="slider-group">
+    <div class="slider-label">
+      <span>高 <b>c</b></span>
+      <span class="value" id="c-val">1.5</span>
+    </div>
+    <input type="range" id="c-slider" min="0.5" max="4" value="1.5" step="0.1">
+  </div>
+
+  <div class="btn-row">
+    <button id="play-btn">▶ 播放</button>
+    <button id="reset-btn">↺ 重置</button>
+  </div>
+
+  <div class="hint">拖拽旋转 · 滚轮缩放 · 右键平移</div>
+</div>
+
+<div id="info" class="panel">
+  <h2>面积信息</h2>
+  <div class="formula" id="formula-display"></div>
+  <div class="face-legend" id="face-legend"></div>
+  <div class="pair-label">相对的面面积相等，共 3 对</div>
+</div>
+
+<div id="container"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Config ──
+const FACES = {
+  front:  { hex: 0x42A5F5, css: '#42A5F5', name: '前面' },
+  back:   { hex: 0x66BB6A, css: '#66BB6A', name: '后面' },
+  top:    { hex: 0xFFA726, css: '#FFA726', name: '上面' },
+  bottom: { hex: 0xAB47BC, css: '#AB47BC', name: '下面' },
+  right:  { hex: 0xEF5350, css: '#EF5350', name: '右面' },
+  left:   { hex: 0x26A69A, css: '#26A69A', name: '左面' },
+};
+
+// ── State ──
+let a = 3, b = 2, c = 1.5;
+let unfold = 0; // 0 = folded cuboid, 1 = flat net
+let playing = false;
+let animDir = 1;
+let lastTime = 0;
+
+// ── DOM ──
+const $ = id => document.getElementById(id);
+const unfoldSlider = $('unfold-slider');
+const unfoldVal = $('unfold-val');
+const aSlider = $('a-slider'), bSlider = $('b-slider'), cSlider = $('c-slider');
+const aVal = $('a-val'), bVal = $('b-val'), cVal = $('c-val');
+const playBtn = $('play-btn'), resetBtn = $('reset-btn');
+const formulaDisplay = $('formula-display');
+const faceLegend = $('face-legend');
+
+// ── Three.js Scene ──
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0f0f23);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(7, 5, 10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+$('container').appendChild(renderer.domElement);
+
+const orbitControls = new OrbitControls(camera, renderer.domElement);
+orbitControls.enableDamping = true;
+orbitControls.dampingFactor = 0.08;
+orbitControls.target.set(0, 0, -0.5);
+orbitControls.update();
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.4);
+dirLight.position.set(5, 8, 6);
+scene.add(dirLight);
+
+// Grid
+const grid = new THREE.GridHelper(24, 24, 0x222244, 0x181830);
+grid.position.y = -5;
+scene.add(grid);
+
+// ── Face Texture ──
+function createFaceTexture(name, d1Name, d2Name, d1, d2, hexColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  const r = (hexColor >> 16) & 0xFF;
+  const g = (hexColor >> 8) & 0xFF;
+  const bv = hexColor & 0xFF;
+  const brightness = (r * 299 + g * 587 + bv * 114) / 1000;
+  const isDark = brightness < 160;
+
+  // Background
+  ctx.fillStyle = `rgb(${r},${g},${bv})`;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Inner panel
+  ctx.fillStyle = isDark ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.08)';
+  ctx.beginPath();
+  ctx.roundRect(36, 36, 440, 440, 20);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(6, 6, 500, 500);
+
+  const textColor = isDark ? '#ffffff' : '#222222';
+  const subColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)';
+  const areaColor = isDark ? '#FFE082' : '#BF360C';
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Face name
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 52px sans-serif';
+  ctx.fillText(name, 256, 130);
+
+  // Formula
+  ctx.fillStyle = subColor;
+  ctx.font = '42px sans-serif';
+  ctx.fillText(`${d1Name} × ${d2Name}`, 256, 220);
+
+  // Values
+  ctx.font = '36px sans-serif';
+  ctx.fillText(`${d1.toFixed(1)} × ${d2.toFixed(1)}`, 256, 295);
+
+  // Area
+  ctx.fillStyle = areaColor;
+  ctx.font = 'bold 50px sans-serif';
+  ctx.fillText(`S = ${(d1 * d2).toFixed(1)}`, 256, 395);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// ── Face Mesh ──
+function createFaceMesh(w, h, texture) {
+  const geo = new THREE.PlaneGeometry(w, h);
+  const mat = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.93,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+
+  // Edge lines
+  const edgeGeo = new THREE.EdgesGeometry(geo);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0x111122 });
+  const edgeFront = new THREE.LineSegments(edgeGeo, edgeMat);
+  edgeFront.position.z = 0.002;
+  mesh.add(edgeFront);
+  const edgeBack = new THREE.LineSegments(edgeGeo.clone(), edgeMat.clone());
+  edgeBack.position.z = -0.002;
+  mesh.add(edgeBack);
+
+  return mesh;
+}
+
+// ── Cuboid Build ──
+let cuboidGroup = null;
+let topPivot, bottomPivot, rightPivot, leftPivot, backPivot;
+
+function disposeMesh(obj) {
+  obj.traverse(child => {
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) {
+      if (child.material.map) child.material.map.dispose();
+      child.material.dispose();
+    }
+  });
+}
+
+function buildCuboid() {
+  if (cuboidGroup) {
+    scene.remove(cuboidGroup);
+    disposeMesh(cuboidGroup);
+  }
+
+  cuboidGroup = new THREE.Group();
+  const F = FACES;
+
+  // ─ Front face (a × c) — reference, stays at z=0 ─
+  const frontTex = createFaceTexture(F.front.name, 'a', 'c', a, c, F.front.hex);
+  cuboidGroup.add(createFaceMesh(a, c, frontTex));
+
+  // ─ Top face (a × b) — hinge at front's top edge ─
+  topPivot = new THREE.Group();
+  topPivot.position.set(0, c / 2, 0);
+  const topMesh = createFaceMesh(a, b, createFaceTexture(F.top.name, 'a', 'b', a, b, F.top.hex));
+  topMesh.position.set(0, b / 2, 0);
+  topPivot.add(topMesh);
+  cuboidGroup.add(topPivot);
+
+  // ─ Bottom face (a × b) — hinge at front's bottom edge ─
+  bottomPivot = new THREE.Group();
+  bottomPivot.position.set(0, -c / 2, 0);
+  const bottomMesh = createFaceMesh(a, b, createFaceTexture(F.bottom.name, 'a', 'b', a, b, F.bottom.hex));
+  bottomMesh.position.set(0, -b / 2, 0);
+  bottomPivot.add(bottomMesh);
+  cuboidGroup.add(bottomPivot);
+
+  // ─ Right face (b × c) — hinge at front's right edge ─
+  rightPivot = new THREE.Group();
+  rightPivot.position.set(a / 2, 0, 0);
+  const rightMesh = createFaceMesh(b, c, createFaceTexture(F.right.name, 'b', 'c', b, c, F.right.hex));
+  rightMesh.position.set(b / 2, 0, 0);
+  rightPivot.add(rightMesh);
+
+  // ─ Back face (a × c) — hinge at right face's far edge ─
+  backPivot = new THREE.Group();
+  backPivot.position.set(b, 0, 0);
+  const backMesh = createFaceMesh(a, c, createFaceTexture(F.back.name, 'a', 'c', a, c, F.back.hex));
+  backMesh.position.set(a / 2, 0, 0);
+  backPivot.add(backMesh);
+  rightPivot.add(backPivot);
+
+  cuboidGroup.add(rightPivot);
+
+  // ─ Left face (b × c) — hinge at front's left edge ─
+  leftPivot = new THREE.Group();
+  leftPivot.position.set(-a / 2, 0, 0);
+  const leftMesh = createFaceMesh(b, c, createFaceTexture(F.left.name, 'b', 'c', b, c, F.left.hex));
+  leftMesh.position.set(-b / 2, 0, 0);
+  leftPivot.add(leftMesh);
+  cuboidGroup.add(leftPivot);
+
+  scene.add(cuboidGroup);
+  applyUnfold();
+}
+
+// ── Unfold ──
+function applyUnfold() {
+  const t = unfold;
+  const angle = (1 - t) * Math.PI / 2;
+
+  topPivot.rotation.x    = -angle;   // fold backward
+  bottomPivot.rotation.x =  angle;   // fold backward
+  rightPivot.rotation.y  =  angle;   // fold backward
+  leftPivot.rotation.y   = -angle;   // fold backward
+  backPivot.rotation.y   =  angle;   // fold further from right
+}
+
+// ── Info Panel ──
+function updateInfo() {
+  const ab = a * b, bc = b * c, ac = a * c;
+  const total = 2 * (ab + bc + ac);
+
+  formulaDisplay.innerHTML =
+    `S<sub>总</sub> = 2(<i>ab</i> + <i>bc</i> + <i>ac</i>)<br>` +
+    `<span style="color:rgba(255,255,255,0.45)">&nbsp;&nbsp;= 2(${ab.toFixed(1)} + ${bc.toFixed(1)} + ${ac.toFixed(1)})</span><br>` +
+    `<span class="highlight">&nbsp;&nbsp;= ${total.toFixed(1)}</span>`;
+
+  const items = [
+    { key: 'front',  dims: 'a×c', area: ac },
+    { key: 'back',   dims: 'a×c', area: ac },
+    { key: 'top',    dims: 'a×b', area: ab },
+    { key: 'bottom', dims: 'a×b', area: ab },
+    { key: 'right',  dims: 'b×c', area: bc },
+    { key: 'left',   dims: 'b×c', area: bc },
+  ];
+
+  faceLegend.innerHTML = items.map(f =>
+    `<div class="face-item">` +
+      `<div class="face-dot" style="background:${FACES[f.key].css}"></div>` +
+      `<span>${FACES[f.key].name} <span style="opacity:.6">${f.dims}</span> = ${f.area.toFixed(1)}</span>` +
+    `</div>`
+  ).join('');
+}
+
+// ── Events ──
+unfoldSlider.addEventListener('input', () => {
+  unfold = parseFloat(unfoldSlider.value) / 100;
+  unfoldVal.textContent = Math.round(unfold * 100) + '%';
+  applyUnfold();
+});
+
+function onDimChange() {
+  a = parseFloat(aSlider.value);
+  b = parseFloat(bSlider.value);
+  c = parseFloat(cSlider.value);
+  aVal.textContent = a.toFixed(1);
+  bVal.textContent = b.toFixed(1);
+  cVal.textContent = c.toFixed(1);
+  buildCuboid();
+  updateInfo();
+}
+aSlider.addEventListener('input', onDimChange);
+bSlider.addEventListener('input', onDimChange);
+cSlider.addEventListener('input', onDimChange);
+
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+  playBtn.classList.toggle('active', playing);
+  if (playing && unfold >= 1) animDir = -1;
+  if (playing && unfold <= 0) animDir = 1;
+});
+
+resetBtn.addEventListener('click', () => {
+  playing = false;
+  animDir = 1;
+  playBtn.textContent = '▶ 播放';
+  playBtn.classList.remove('active');
+  unfold = 0;
+  unfoldSlider.value = 0;
+  unfoldVal.textContent = '0%';
+  a = 3; b = 2; c = 1.5;
+  aSlider.value = 3; bSlider.value = 2; cSlider.value = 1.5;
+  aVal.textContent = '3.0'; bVal.textContent = '2.0'; cVal.textContent = '1.5';
+  buildCuboid();
+  updateInfo();
+  camera.position.set(7, 5, 10);
+  orbitControls.target.set(0, 0, -0.5);
+  orbitControls.update();
+});
+
+// ── Animation Loop ──
+function animate(ts) {
+  const dt = lastTime ? (ts - lastTime) / 1000 : 0;
+  lastTime = ts;
+
+  if (playing && dt > 0 && dt < 0.15) {
+    unfold += animDir * dt / 3; // ~3s per direction
+    if (unfold >= 1) { unfold = 1; animDir = -1; }
+    if (unfold <= 0) { unfold = 0; animDir = 1; }
+    unfoldSlider.value = unfold * 100;
+    unfoldVal.textContent = Math.round(unfold * 100) + '%';
+    applyUnfold();
+  }
+
+  orbitControls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+// ── Resize ──
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ── Init ──
+buildCuboid();
+updateInfo();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
