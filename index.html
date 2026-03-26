@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>长方体展开图 - 交互动画</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'">
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -212,6 +213,12 @@ button.active {
 
 <div id="container"></div>
 
+<!--
+  Security note: importmap does not support SRI (integrity) attributes.
+  The CSP header above restricts script sources to cdn.jsdelivr.net only.
+  For higher security, vendor these files locally instead of using CDN.
+  Three.js r162 pinned — do not use unpinned "latest" URLs.
+-->
 <script type="importmap">
 {
   "imports": {
@@ -453,26 +460,45 @@ function updateInfo() {
   const ab = a * b, bc = b * c, ac = a * c;
   const total = 2 * (ab + bc + ac);
 
-  formulaDisplay.innerHTML =
-    `S<sub>总</sub> = 2(<i>ab</i> + <i>bc</i> + <i>ac</i>)<br>` +
-    `<span style="color:rgba(255,255,255,0.45)">&nbsp;&nbsp;= 2(${ab.toFixed(1)} + ${bc.toFixed(1)} + ${ac.toFixed(1)})</span><br>` +
-    `<span class="highlight">&nbsp;&nbsp;= ${total.toFixed(1)}</span>`;
+  // Security: use textContent / DOM API instead of innerHTML to prevent XSS
+  formulaDisplay.textContent = '';
+  const line1 = document.createElement('span');
+  line1.textContent = 'S\u2091 = 2(ab + bc + ac)';
+  const br1 = document.createElement('br');
+  const line2 = document.createElement('span');
+  line2.style.color = 'rgba(255,255,255,0.45)';
+  line2.textContent = `  = 2(${ab.toFixed(1)} + ${bc.toFixed(1)} + ${ac.toFixed(1)})`;
+  const br2 = document.createElement('br');
+  const line3 = document.createElement('span');
+  line3.className = 'highlight';
+  line3.textContent = `  = ${total.toFixed(1)}`;
+  formulaDisplay.append(line1, br1, line2, br2, line3);
 
   const items = [
-    { key: 'front',  dims: 'a×c', area: ac },
-    { key: 'back',   dims: 'a×c', area: ac },
-    { key: 'top',    dims: 'a×b', area: ab },
-    { key: 'bottom', dims: 'a×b', area: ab },
-    { key: 'right',  dims: 'b×c', area: bc },
-    { key: 'left',   dims: 'b×c', area: bc },
+    { key: 'front',  dims: 'a\u00d7c', area: ac },
+    { key: 'back',   dims: 'a\u00d7c', area: ac },
+    { key: 'top',    dims: 'a\u00d7b', area: ab },
+    { key: 'bottom', dims: 'a\u00d7b', area: ab },
+    { key: 'right',  dims: 'b\u00d7c', area: bc },
+    { key: 'left',   dims: 'b\u00d7c', area: bc },
   ];
 
-  faceLegend.innerHTML = items.map(f =>
-    `<div class="face-item">` +
-      `<div class="face-dot" style="background:${FACES[f.key].css}"></div>` +
-      `<span>${FACES[f.key].name} <span style="opacity:.6">${f.dims}</span> = ${f.area.toFixed(1)}</span>` +
-    `</div>`
-  ).join('');
+  // Security: build legend with DOM API instead of innerHTML
+  faceLegend.textContent = '';
+  items.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'face-item';
+    const dot = document.createElement('div');
+    dot.className = 'face-dot';
+    dot.style.background = FACES[f.key].css;
+    const span = document.createElement('span');
+    const dimSpan = document.createElement('span');
+    dimSpan.style.opacity = '0.6';
+    dimSpan.textContent = f.dims;
+    span.append(FACES[f.key].name + ' ', dimSpan, ` = ${f.area.toFixed(1)}`);
+    div.append(dot, span);
+    faceLegend.appendChild(div);
+  });
 }
 
 // ── Events ──

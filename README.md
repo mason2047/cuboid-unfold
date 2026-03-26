@@ -1,3 +1,7 @@
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Three.js](https://img.shields.io/badge/Three.js-r162-black?logo=three.js)](https://threejs.org/)
+[![GitHub Pages](https://img.shields.io/badge/Demo-Live-green)](https://masonthink.github.io/cuboid-unfold/)
+
 # Cuboid Unfold -- Interactive 3D Unfolding Visualization
 
 An interactive 3D visualization that animates the unfolding of a rectangular prism (cuboid) into its flat net. Designed as an educational tool to help students understand solid geometry concepts.
@@ -48,6 +52,10 @@ Complete -- Functional single-page application.
 MIT
 
 ---
+
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Three.js](https://img.shields.io/badge/Three.js-r162-black?logo=three.js)](https://threejs.org/)
+[![GitHub Pages](https://img.shields.io/badge/Demo-Live-green)](https://masonthink.github.io/cuboid-unfold/)
 
 # Cuboid Unfold -- 长方体展开图交互式 3D 可视化
 
